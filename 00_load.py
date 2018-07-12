@@ -116,7 +116,46 @@ rsts = rf_generator(df = train
                     , no_of_vars = 50
                     )
 
-rsts
+## determine mean importance for each variable  -------------------------------
+importance_np = np.zeros(shape = len(rsts.index))
+
+for i, j in enumerate(rsts.index):
+    fltr = rsts.loc[j] > -1
+    average = (rsts.loc[j][fltr]).mean()
+    importance_np[i] = average
+    print(i)
+    
+importance = pd.DataFrame(importance_np, index = rsts.index
+                          , columns = np.array(['avg_import'])
+                          )
+
+## sort by most important  ----------------------------------------------------
+importance = importance.sort_values('avg_import', ascending = False)
+## filter out very low values  ------------------------------------------------
+importance_05 = importance[importance['avg_import'] > 0.05]
+
+## take top 200 variables and build a random forrest from it  -----------------
+forrest = RandomForestRegressor(n_estimators = 500
+                            , min_samples_leaf = 30)
+forrest.fit(y = train['target'], X = train[importance_05.index[0:200]])
+
+train_scored = pd.concat([train['target']
+                , pd.Series(forrest.predict(train[importance_05.index[0:200]]))], axis = 1)
+train_scored.columns = ['actual', 'fitted']
+train_scored.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_1_training.csv'
+                 , index = False)
+
+
+
+    
+## score model on test data  --------------------------------------------------
+rst = forrest.predict(test[importance_05.index[0:200]])
+
+rst_frame = pd.concat([test['ID'], pd.Series(rst)], axis = 1, ignore_index = True)
+rst_frame.columns = ['ID', 'target']
+## write results  -------------------------------------------------------------
+rst_frame.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_1.csv'
+                 , index = False)
 
 
 ##  ===========================================================================
