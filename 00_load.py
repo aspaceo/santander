@@ -64,6 +64,7 @@ def rf_generator(df
                  , no_of_trees
                  , no_of_vars
                  , target = 'target'
+                 , min_samp_leaf = 30
                  , seed = 100):
     ''' 
         rf_generator will train the specified number of 
@@ -90,18 +91,16 @@ def rf_generator(df
         ## randomly select x vars to include  ---------------------------------
         mod_vars = random.sample(list(vars_to_include), no_of_vars)
         
-        forrest = RandomForestRegressor(n_estimators = no_of_trees
-                                    , min_samples_leaf = 30
+        forest = RandomForestRegressor(n_estimators = no_of_trees
+                                    , min_samples_leaf = min_samp_leaf
                                     )
-        forrest.fit(y = df[target], X = df[mod_vars])
+        forest.fit(y = df[target], X = df[mod_vars])
+        mod_score = forest.score(y = df[target], X = df[mod_vars])
         
         ## update rf to store variable importance  ----------------------------
-        rf.loc[mod_vars, i] = forrest.feature_importances_
-        print("scored rf: " + str(i))
+        rf.loc[mod_vars, i] = forest.feature_importances_
+        print("scored rf: " + str(i) + " - Score: " + str(mod_score))
 
-
-
-    
     ##  return  ---------------------------------------------------------------
     return(rf)
 
@@ -114,6 +113,7 @@ rsts = rf_generator(df = train
                     , no_of_models = 2000
                     , no_of_trees = 250
                     , no_of_vars = 50
+                    , min_samp_leaf = 30
                     )
 
 ## determine mean importance for each variable  -------------------------------
@@ -134,13 +134,13 @@ importance = importance.sort_values('avg_import', ascending = False)
 ## filter out very low values  ------------------------------------------------
 importance_05 = importance[importance['avg_import'] > 0.05]
 
-## take top 200 variables and build a random forrest from it  -----------------
-forrest = RandomForestRegressor(n_estimators = 500
+## take top 200 variables and build a random forest from it  -----------------
+forest = RandomForestRegressor(n_estimators = 500
                             , min_samples_leaf = 30)
-forrest.fit(y = train['target'], X = train[importance_05.index[0:200]])
+forest.fit(y = train['target'], X = train[importance_05.index[0:200]])
 
 train_scored = pd.concat([train['target']
-                , pd.Series(forrest.predict(train[importance_05.index[0:200]]))], axis = 1)
+                , pd.Series(forest.predict(train[importance_05.index[0:200]]))], axis = 1)
 train_scored.columns = ['actual', 'fitted']
 train_scored.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_1_training.csv'
                  , index = False)
@@ -149,7 +149,7 @@ train_scored.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + '
 
     
 ## score model on test data  --------------------------------------------------
-rst = forrest.predict(test[importance_05.index[0:200]])
+rst = forest.predict(test[importance_05.index[0:200]])
 
 rst_frame = pd.concat([test['ID'], pd.Series(rst)], axis = 1, ignore_index = True)
 rst_frame.columns = ['ID', 'target']
@@ -161,6 +161,15 @@ rst_frame.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_1
 ##  ===========================================================================
 ##  ----------------------   scratch   ----------------------------------------
 ##  ===========================================================================
+
+
+
+matplotlib.pyplot.hist(train['58e2e02e6'])
+matplotlib.pyplot.scatter(x = train['58e2e02e6'], y = train['target'])
+
+forest.score(y = train['target'], X = train[importance_05.index[0:200]])
+
+
 
 df = train
 vars_to_include = train.columns[2:]  ## everything but the first two  ---------
