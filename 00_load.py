@@ -113,7 +113,7 @@ rsts = rf_generator(df = train
                     , no_of_models = 2000
                     , no_of_trees = 250
                     , no_of_vars = 50
-                    , min_samp_leaf = 30
+                    , min_samp_leaf = 10
                     )
 
 ## determine mean importance for each variable  -------------------------------
@@ -136,13 +136,13 @@ importance_05 = importance[importance['avg_import'] > 0.05]
 
 ## take top 200 variables and build a random forest from it  -----------------
 forest = RandomForestRegressor(n_estimators = 500
-                            , min_samples_leaf = 30)
+                            , min_samples_leaf = 10)
 forest.fit(y = train['target'], X = train[importance_05.index[0:200]])
 
 train_scored = pd.concat([train['target']
                 , pd.Series(forest.predict(train[importance_05.index[0:200]]))], axis = 1)
 train_scored.columns = ['actual', 'fitted']
-train_scored.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_1_training.csv'
+train_scored.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_2_training.csv'
                  , index = False)
 
 
@@ -154,7 +154,7 @@ rst = forest.predict(test[importance_05.index[0:200]])
 rst_frame = pd.concat([test['ID'], pd.Series(rst)], axis = 1, ignore_index = True)
 rst_frame.columns = ['ID', 'target']
 ## write results  -------------------------------------------------------------
-rst_frame.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_1.csv'
+rst_frame.to_csv('/Users/Paul/Documents/kaggle/santander/data/processed/' + 's_2.csv'
                  , index = False)
 
 
